@@ -265,7 +265,7 @@ public class MicrometerCustomMetricsConfig {
   @Bean
   public MeterBinder sdkInfoBinder(SdkInfo sdkInfo) {
     return (registry) -> Gauge.builder(METRIC_GAUGE_SDK_INFO, ()-> 1)
-            .tags(TAG_SDK_VERSION, sdkInfo.version())
+            .tags(TAG_SDK_VERSION, sdkInfo.version(), "sdk_language", sdkInfo.language(), "sdk_platform", sdkInfo.platform(), "sdk_os", sdkInfo.os())
             .register(registry);
   }
 

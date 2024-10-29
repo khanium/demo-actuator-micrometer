@@ -49,13 +49,12 @@ public class MicrometerCustomMetricsConfig {
     /**
      * Create the SdkInfo bean for extracting the SDK version as common tag for Couchbase metrics
      * Future SDK versions should include this as a new metric
-     * @param clusterInfo
      * @param environment
      * @return SdkInfo
      */
     @Bean
-    public SdkInfo sdkInfo(ClusterInfo clusterInfo, ClusterEnvironment environment) {
-        return SdkInfo.SdkInfoFactory.create(clusterInfo, environment);
+    public SdkInfo sdkInfo(ClusterEnvironment environment) {
+        return SdkInfo.SdkInfoFactory.create(environment);
     }
 
     @Bean
@@ -72,7 +71,7 @@ public class MicrometerCustomMetricsConfig {
     @Bean
     public MeterBinder sdkInfoBinder(SdkInfo sdkInfo) {
         return (registry) -> Gauge.builder(METRIC_GAUGE_SDK_INFO, ()-> 1)
-                .tags(TAG_SDK_VERSION, sdkInfo.version())
+                .tags(TAG_SDK_VERSION, sdkInfo.version(), "sdk_language", sdkInfo.language(), "sdk_platform", sdkInfo.platform(), "sdk_os", sdkInfo.os())
                 .register(registry);
     }
 
