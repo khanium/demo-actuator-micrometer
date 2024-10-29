@@ -1,0 +1,182 @@
+services:
+  zipkin:
+    image: 'openzipkin/zipkin:latest'
+    ports:
+      - '9411'
+    networks:
+      - workshop
+
+  couchbase:
+    image: btburnett3/couchbase-quickinit:enterprise-7.2.3
+    hostname: couchbase
+    container_name: couchbase
+    environment:
+      - CB_SERVICES=kv,n1ql,index,fts
+      - CB_CLUSTER_NAME=demo
+      - CB_INDEXSTORAGE=plasma
+      - CB_DATARAM=1024
+    volumes:
+      - "./services/couchbase/couchbase:/opt/couchbase/var/lib/couchbase"
+      - "./services/couchbase/config:/startup"
+    # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://Administrator:password@localhost:8091/pools/default/buckets/demo/scopes"]
+      # TODO: Add script to check if the scopes are ready
+      interval: 10s
+      timeout: 3s
+      retries: 60
+    command:
+      - bash
+      - -c
+      - |
+        echo 'initialization...'
+        sleep 10;
+        chmod +x /startup/load.sh
+        cd /startup
+        /startup/load.sh
+    ports:
+      - "8091-8096:8091-8096"
+      - "18091-18096:18091-18096"
+      - "11207:11207"
+      - "11210-11211:11210-11211"
+    networks:
+      - workshop
+
+  #  dummy-wait:
+  #    depends_on:
+  #      couchbase:
+  #        condition: service_healthy
+  #    container_name: dummy-wait
+  #    image: alpine
+  #    command:
+  #      - /bin/sh
+  #      - -c
+  #      - |
+  #         sleep 60
+  #    healthcheck:
+  #      disable: true
+
+
+  #  sync-gateway:
+  #    build: ./sgw
+  #    ports:
+  #      - "4984-4986:4984-4986"
+  #    hostname: sync-gateway
+  #    container_name: sync-gateway
+  #    depends_on:
+  #      dummy-wait:
+  #        condition: service_completed_successfully
+  #    working_dir: /docker-syncgateway
+  #    volumes:
+  #      - ./sgw/config:/docker-syncgateway
+  #      - ./sgw/logs:/var/log/sync_gateway
+  #    stdin_open: true
+  #    tty: true
+  #    networks:
+  #      - workshop
+
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      # Remember to use read-only bind mounts.
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro,rslave
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - "--collector.filesystem.ignored-mount-points='^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'"
+    ports:
+      - "9100:9100"
+    networks:
+      - workshop
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    depends_on:
+      couchbase:
+        condition: service_healthy
+    labels:
+      clusterName: demo723
+    volumes:
+      - ./services/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./services/prometheus/data:/prometheus
+      - ./services/prometheus/rules:/etc/prometheus/rules
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - workshop
+
+
+  #  loki:
+  #    image: grafana/loki:2.9.4
+  #    container_name: loki
+  #    ports:
+  #      - "3100:3100"
+  #    volumes:
+  #      - ./services/loki/local-config.yml:/etc/loki/local-config.yaml
+  #    command: -config.file=/etc/loki/local-config.yaml
+  #    networks:
+  #      - workshop
+
+  #  promtail:
+  #    image: grafana/promtail:2.9.4
+  #    container_name: promtail
+  #    volumes:
+  #      - ./services/promtail/log:/var/log
+  #     - ./services/promtail/promtail-local-config.yml:/etc/promtail/config.yml
+  #    command: -config.file=/etc/promtail/config.yml
+  #    networks:
+  #     - workshop
+
+
+
+  #  alertmanager:
+  #    image: prom/alertmanager:v0.23.0
+  #    container_name: alertmanager
+  #    restart: unless-stopped
+  #    ports:
+  #      - "9093:9093"
+  #    volumes:
+  #      - ./services/alertmanager/config:/config
+  #      - ./services/alertmanager/data:/data
+  #    command: --config.file=/config/alertmanager.yml --log.level=debug
+
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_INSTALL_PLUGINS=grafana-simple-json-datasource
+    ports:
+      - '3000:3000'
+    depends_on:
+      - prometheus
+    labels:
+      clusterName: demoCB723
+    volumes:
+      - ./services/grafana/data:/var/lib/grafana
+      - ./services/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./services/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./services/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - workshop
+
+networks:
+  workshop:
+    driver: bridge

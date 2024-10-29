@@ -1,0 +1,15 @@
+spring:
+  couchbase:
+    connection-string: 127.0.0.1
+    username: Administrator
+    password: password
+    bucket-name: demo
+    # spring.app.couchbase.bulk-timeout-ms=1000
+    # spring.app.couchbase.single-timeout-ms=1000
+    # spring.couchbase.tracer.kvThreshold=200
+    # spring.couchbase.tracer.n1qlThreshold=1000
+    # spring.couchbase.tracer.logInterval=10
+
+logging:
+  level:
+    io.micrometer: DEBUG

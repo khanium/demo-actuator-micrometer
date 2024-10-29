@@ -1,0 +1,70 @@
+spring:
+  profiles:
+    active: dev
+    default: dev
+  application:
+    name: demo-actuator-micrometer
+    version: 1.0.0
+
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.couchbase.CouchbaseDataAutoConfiguration
+  lifecycle:
+    timeout-per-shutdown-phase: 1m
+  # spring.messages.basename=messages,message-commons2
+
+  # Configure your Couchbase Cluster
+  ## List of nodes comma separated. At least (replica number + 1) nodes here
+  couchbase:
+    connection-string: 127.0.0.1
+    username: Administrator
+    password: password
+    bucket-name: demo
+
+    # spring.app.couchbase.bulk-timeout-ms=1000
+    # spring.app.couchbase.single-timeout-ms=1000
+    # spring.couchbase.tracer.kvThreshold=200
+    # spring.couchbase.tracer.n1qlThreshold=1000
+    # spring.couchbase.tracer.logInterval=10
+  docker:
+    compose:
+      lifecycle-management: start_only
+      start:
+        skip: if_running
+# Configure actuator health probes endpoints: info,health,prometheus,metrics
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*' # Expose all the endpoints
+  endpoint:
+    prometheus:
+      enabled: true # Enabling prometheus
+  jvm:
+    metrics:
+      export:
+        enabled: true
+
+  metrics:
+    tags:
+        application: ${spring.application.name}
+        environment: ${spring.profiles.active}
+        region: eu-west-1
+        instance: ${spring.application.instance_id}
+        version: ${spring.application.version}
+
+    enable:
+      all: true
+      jvm: true
+      prometheus: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: PT3M
+
+server:
+  shutdown: graceful
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name},%X{traceId:-},%X{spanId:-}]"
