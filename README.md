@@ -10,6 +10,8 @@ This repository demonstrates how to configure custom metrics and custom common t
 - Docker
 - Docker Compose
 
+## Dependencies
+
 Project dependencies are managed using Maven. The project uses the following dependencies:
 
 ```xml
