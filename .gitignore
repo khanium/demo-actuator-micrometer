@@ -25,9 +25,15 @@ replay_pid*
 
 
 target/
-prometheus/data/*
-grafana/data/*
-couchbase/couchbase/*
+services/prometheus/data/*
+services/grafana/data/*
+services/grafana/dashboards/cmos
+services/grafana/dashboards/cmos/*
+services/grafana/dashboards/cmos-plus
+services/grafana/dashboards/cmos-plus/*
+services/grafana/dashboards/promtimer
+services/grafana/dashboards/promtimer/*
+services/couchbase/couchbase/*
 
 .DS_Store
 **/.DS_Store
