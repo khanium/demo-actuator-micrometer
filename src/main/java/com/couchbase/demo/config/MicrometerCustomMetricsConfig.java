@@ -4,6 +4,8 @@ import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.env.ClusterEnvironment;
 import com.couchbase.demo.config.metadata.ClusterInfo;
 import com.couchbase.demo.config.metadata.SdkInfo;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Tag;
@@ -79,6 +81,16 @@ public class MicrometerCustomMetricsConfig {
     public MeterBinder metricKvConnections(Cluster cluster) {
         return (registry) -> Gauge.builder(METRIC_GAUGE_KV_CONNECTIONS, ()-> cluster.environment().ioConfig().numKvConnections())
                 .register(registry);
+    }
+
+    @Bean
+    public MeterBinder processMemoryMetrics() {
+        return new ProcessMemoryMetrics();
+    }
+
+    @Bean
+    public MeterBinder processThreadMetrics() {
+        return new ProcessThreadMetrics();
     }
 
 }
